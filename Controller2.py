@@ -45,31 +45,38 @@ class Controller(QtGui.QWidget):
             except socket.error as serror:
                 print(serror.strerror)
 
+    def bind_and_listen(self):
 
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as serversocket:
 
-    def listen(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind((self.host, self.port))
-        print("Test")
-        self.socket.listen(5)
-        while True:
-            print("Auf Clients warten...")
-            client, address = self.socket.accept()
-            threading.Thread(target = self.listenClient, args = (client, address)).start()
+            serversocket.bind((self.host, self.port))
+            serversocket.listen(5)
 
-    def listenClient(self, client, address):
-        while True:
-             try:
+            try:
 
-                data = client.recv(1024)
-                if data:
-                    response = data
-                    client.send(response)
-                else:
-                    raise Exception("Client disconnected")
+                while True:
 
-             except socket.error:
-                 print("Socket closed")
+                    print("Auf Clients warten...")
+
+                    (clientsocket, address) = serversocket.accept()
+                    print("Client verbunden! Warte auf Nachricht...")
+
+                    while True:
+
+                        data = clientsocket.recv(1024).decode()
+
+                        if not data:
+                            clientsocket.close()
+                            break
+                        if data == "exit":
+                            clientsocket.send("Tschüss!".encode())
+                            clientsocket.close()
+                            break
+                        else:
+                            msg = input("Antwort an Client: ")
+                            clientsocket.send(msg.encode())
+            except socket.error as serror:
+                print("Socket closed.")
 
 
     def send_msg(self, msg):
@@ -79,6 +86,44 @@ class Controller(QtGui.QWidget):
     def get_msg(self):
         print(self.view.input.text())
 
+class Acceptthread(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+
+        self.host = "localhost"
+        self.port = 50000
+
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.bind((self.host, self.port))
+
+        self.socket.listen(5)
+
+    def run(self):
+        try:
+            while True:
+                print("Auf Clients warten...")
+                (clientsocket, address) = self.socket.accept()
+                print("Client verbunden! Warte auf Nachricht...")
+
+                while True:
+                    data = clientsocket.recv(1024).decode()
+
+                    if not data:
+                        clientsocket.close()
+                        self.join()
+                        break
+                    if data == "exit":
+                        clientsocket.send("Tschüss!".encode())
+                        self.join()
+                        clientsocket.close()
+                        break
+                    else:
+                        msg = input("Antwort an Client: ")
+                        clientsocket.send(msg.encode())
+
+        except clientsocket.error:
+            print("Socket closed")
+
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
@@ -86,9 +131,11 @@ if __name__ == "__main__":
     server = Controller("localhost", 50000)
     server.move(400,200)
     server.show()
-    server.listen()
-
-
+    #server.listen()
+    t = Acceptthread()
+    # t.join() ist nicht notwendig, denn wenn sich das Programm schließt wird t.daemon auf False gesetzt und der Thread schließt sich von selbst
+    t.daemon = True
+    t.start()
 
     #server = Controller(ServerView, "localhost", 50000)
     #server.move(823,200)
