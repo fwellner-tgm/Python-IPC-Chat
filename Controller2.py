@@ -1,17 +1,19 @@
 import ClientView, ServerView, sys, socket, threading
-import _thread
 from PySide import QtGui, QtCore
 
 
 class Controller(QtGui.QWidget):
+    HOST = ""
+    PORT = 0
     def __init__(self, host, port, parent=None):
         super().__init__(parent)
 
         self.host = host
-        self.port = port
+        self.HOST = host
 
-        self.view = ServerView.Ui_Form()
-        self.view.setupUi(self)
+        self.port = port
+        self.PORT = port
+
 
 
 
@@ -86,9 +88,15 @@ class Controller(QtGui.QWidget):
     def get_msg(self):
         print(self.view.input.text())
 
-class Acceptthread(threading.Thread):
-    def __init__(self):
+
+
+class Acceptthread(QtGui.QWidget, threading.Thread):
+    def __init__(self, parent=None):
+        super().__init__(parent)
         threading.Thread.__init__(self)
+
+        self.view = ServerView.Ui_Form()
+        self.view.setupUi(self)
 
         self.host = "localhost"
         self.port = 50000
@@ -97,12 +105,15 @@ class Acceptthread(threading.Thread):
         self.socket.bind((self.host, self.port))
 
         self.socket.listen(5)
+        self.showChat(text="")
 
     def run(self):
         try:
             while True:
+                #self.view.outputText.setText("Auf Clients warten...")
                 print("Auf Clients warten...")
                 (clientsocket, address) = self.socket.accept()
+                #self.view.outputClients.setText("Client 1")
                 print("Client verbunden! Warte auf Nachricht...")
 
                 while True:
@@ -110,29 +121,32 @@ class Acceptthread(threading.Thread):
 
                     if not data:
                         clientsocket.close()
-                        self.join()
                         break
                     if data == "exit":
                         clientsocket.send("Tschüss!".encode())
-                        self.join()
                         clientsocket.close()
                         break
                     else:
                         msg = input("Antwort an Client: ")
                         clientsocket.send(msg.encode())
 
-        except clientsocket.error:
+        except socket.error:
+            self.run()
             print("Socket closed")
+
+    def showChat(self, text):
+        self.view.outputText.setText(text)
 
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
 
-    server = Controller("localhost", 50000)
-    server.move(400,200)
-    server.show()
+    # server = Controller("localhost", 50000)
+    # server.move(400,200)
+    # server.show()
     #server.listen()
     t = Acceptthread()
+    t.show()
     # t.join() ist nicht notwendig, denn wenn sich das Programm schließt wird t.daemon auf False gesetzt und der Thread schließt sich von selbst
     t.daemon = True
     t.start()
