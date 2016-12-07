@@ -11,7 +11,8 @@ class Connectthread(QtGui.QWidget, threading.Thread):
         self.view = ClientView.Ui_Form()
         self.view.setupUi(self)
 
-        self.msg = ""
+        self.msg = "test"
+        self.liste = []
         self.buttonHandle()
 
         self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -25,7 +26,7 @@ class Connectthread(QtGui.QWidget, threading.Thread):
             while True:
                 #self.conn(, QtCore.SIGNAL("clicked()"), self.clientsocket.send("Funktioniert!!"))
                 #self.controller.connect(self.controller.view.senden, QtCore.SIGNAL("clicked()"), lambda: self.clientsocket.send("Funktioniert!!".encode()))
-                self.clientsocket.send(self.buttonHandle().encode())
+                self.clientsocket.send(self.msg.encode())
 
                 # self.clientsocket.send(haram.encode())
 
@@ -34,21 +35,20 @@ class Connectthread(QtGui.QWidget, threading.Thread):
                 print("Server: " + data)
 
 
-
         except socket.error as serror:
             print("Socketerror: " + serror.strerror)
 
 
     def buttonHandle(self):
-        self.view.senden.clicked.connect(lambda: self.setmsg("Client 1: " + self.view.input.text()))
+        self.view.senden.clicked.connect(lambda: self.setmsg(self.view.input.text()))
         self.view.senden.clicked.connect(lambda: self.view.input.clear())
         self.view.senden.clicked.connect(lambda: self.view.input.setFocus())
-        self.view.output.verticalScrollBar()
-        return self.msg
 
     def setmsg(self, msg):
-        self.msg += msg + "<br>"
-        self.view.output.setText(self.msg)
+        self.msg = msg
+        self.view.output.append("Client 1: " + msg)
+
+        print(self.msg)
         return self.msg
 
 
@@ -58,24 +58,11 @@ class Connectthread(QtGui.QWidget, threading.Thread):
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
 
-    # client = Controller("localhost", 50000)
-    # client.move(400,200)
-    # client.show()
-    #
-    # t = Connectthread()
-    # t.daemon = True
-    # t.start()
 
     client2 = Connectthread()
     client2.show()
 
     client2.daemon = True
     client2.start()
-
-
-    #server = Controller(ServerView, "localhost", 50000)
-    #server.move(823,200)
-    #server.show()
-    #server.connect_to_server()
 
     sys.exit(app.exec_())

@@ -1,4 +1,5 @@
 import ClientView, ServerView, sys, socket, threading
+from Controller import Connectthread
 from PySide import QtGui, QtCore
 
 
@@ -17,7 +18,8 @@ class Acceptthread(QtGui.QWidget, threading.Thread):
         self.socket.bind((self.host, self.port))
 
         self.socket.listen(5)
-        self.showChat(text="")
+        self.view.outputText.setText("Auf Clients warten...")
+
 
     def run(self):
         try:
